@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 .bolt
 .cursorrules
+biome.json
+bun.lockb

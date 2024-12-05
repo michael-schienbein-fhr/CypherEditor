@@ -1,6 +1,10 @@
 grammar Cypher;
 
-oC_Cypher: SP? oC_Statement ( SP? ';' )? SP? EOF;
+options {
+  caseInsensitive = true;
+}
+
+oC_Cypher: oC_Statement ( ';' )? EOF;
 
 oC_Statement
     : oC_Query
@@ -13,7 +17,7 @@ oC_Query
     ;
 
 oC_RegularQuery
-    : oC_SingleQuery ( SP? UNION SP? ( ALL SP? )? oC_SingleQuery )*
+    : oC_SingleQuery ( UNION ( ALL )? oC_SingleQuery )*
     ;
 
 oC_SingleQuery
@@ -22,15 +26,15 @@ oC_SingleQuery
     ;
 
 oC_SinglePartQuery
-    : ( oC_ReadingClause SP? )*
-      ( oC_UpdatingClause SP? )*
+    : ( oC_ReadingClause )*
+      ( oC_UpdatingClause )*
       oC_Return
     ;
 
 oC_MultiPartQuery
-    : ( oC_ReadingClause SP? )*
-      ( oC_UpdatingClause SP? )*
-      oC_With SP?
+    : ( oC_ReadingClause )*
+      ( oC_UpdatingClause )*
+      oC_With
       oC_SinglePartQuery
     ;
 
@@ -40,156 +44,395 @@ oC_ReadingClause
     | oC_InQueryCall
     ;
 
-oC_UpdatingClause
-    : oC_Create
-    | oC_Merge
-    | oC_Delete
-    | oC_Set
-    | oC_Remove
+oC_Command
+    : oC_CreateIndex
+    | oC_DropIndex
+    | oC_CreateConstraint
+    | oC_DropConstraint
+    ;
+
+oC_CreateIndex
+    : CREATE INDEX ON oC_NodeLabel '(' oC_PropertyExpression (',' oC_PropertyExpression)* ')'
+    ;
+
+oC_DropIndex
+    : DROP INDEX ON oC_NodeLabel '(' oC_PropertyExpression (',' oC_PropertyExpression)* ')'
+    ;
+
+oC_CreateConstraint
+    : CREATE CONSTRAINT ON '(' oC_Variable oC_NodeLabel ')' ASSERT oC_PropertyExpression IS UNIQUE
+    ;
+
+oC_DropConstraint
+    : DROP CONSTRAINT ON '(' oC_Variable oC_NodeLabel ')' ASSERT oC_PropertyExpression IS UNIQUE
     ;
 
 oC_Match
-    : ( OPTIONAL SP? )? MATCH SP? oC_Pattern ( SP? oC_Where )?
+    : ( OPTIONAL )? MATCH oC_Pattern ( WHERE oC_Expression )?
     ;
 
 oC_Unwind
-    : UNWIND SP? oC_Expression SP? AS SP? oC_Variable
+    : UNWIND oC_Expression AS oC_Variable
+    ;
+
+oC_Merge
+    : MERGE oC_PatternPart ( oC_MergeAction )*
+    ;
+
+oC_MergeAction
+    : ON MATCH oC_Set
+    | ON CREATE oC_Set
     ;
 
 oC_Create
-    : CREATE SP? oC_Pattern
+    : CREATE oC_Pattern
     ;
 
 oC_Set
-    : SET SP? oC_SetItem ( SP? ',' SP? oC_SetItem )*
+    : SET oC_SetItem ( ',' oC_SetItem )*
+    ;
+
+oC_SetItem
+    : oC_PropertyExpression '=' oC_Expression
+    | oC_Variable '=' oC_Expression
+    | oC_Variable '+=' oC_Expression
+    | oC_Variable oC_NodeLabels
     ;
 
 oC_Delete
-    : ( DETACH SP? )? DELETE SP? oC_Expression ( SP? ',' SP? oC_Expression )*
+    : ( DETACH )? DELETE oC_Expression ( ',' oC_Expression )*
     ;
 
 oC_Remove
-    : REMOVE SP? oC_RemoveItem ( SP? ',' SP? oC_RemoveItem )*
+    : REMOVE oC_RemoveItem ( ',' oC_RemoveItem )*
+    ;
+
+oC_RemoveItem
+    : oC_Variable oC_NodeLabels
+    | oC_PropertyExpression
+    ;
+
+oC_InQueryCall
+    : CALL oC_ExplicitProcedureInvocation ( YIELD oC_YieldItems )?
+    ;
+
+oC_StandaloneCall
+    : CALL oC_ExplicitProcedureInvocation ( YIELD oC_YieldItems )?
+    ;
+
+oC_YieldItems
+    : oC_YieldItem ( ',' oC_YieldItem )*
+    ;
+
+oC_YieldItem
+    : oC_ProcedureResultField ( AS oC_Variable )?
     ;
 
 oC_With
-    : WITH ( SP? DISTINCT )? SP? oC_ReturnBody ( SP? oC_Where )?
+    : WITH ( DISTINCT )? oC_ReturnBody ( WHERE oC_Expression )?
     ;
 
 oC_Return
-    : RETURN ( SP? DISTINCT )? SP? oC_ReturnBody
+    : RETURN ( DISTINCT )? oC_ReturnBody
     ;
 
 oC_ReturnBody
     : oC_ReturnItems
-      ( SP? oC_Order )?
-      ( SP? oC_Skip )?
-      ( SP? oC_Limit )?
+      ( ORDER BY oC_SortItem ( ',' oC_SortItem )* )?
+      ( SKIP oC_Expression )?
+      ( LIMIT oC_Expression )?
+    ;
+
+oC_ReturnItems
+    : '*'
+    | oC_ReturnItem ( ',' oC_ReturnItem )*
+    ;
+
+oC_ReturnItem
+    : oC_Expression ( AS oC_Variable )?
+    ;
+
+oC_Order
+    : ORDER BY oC_SortItem ( ',' oC_SortItem )*
+    ;
+
+oC_SortItem
+    : oC_Expression ( ASCENDING | ASC | DESCENDING | DESC )?
+    ;
+
+oC_Pattern
+    : oC_PatternPart ( ',' oC_PatternPart )*
+    ;
+
+oC_PatternPart
+    : ( oC_Variable '=' )? oC_AnonymousPatternPart
+    ;
+
+oC_AnonymousPatternPart
+    : oC_PatternElement
+    ;
+
+oC_PatternElement
+    : ( '(' oC_NodePattern ')' )
+    | ( '(' oC_NodePattern ')' oC_PatternElementChain+ )
+    ;
+
+oC_NodePattern
+    : ( oC_Variable )? ( oC_NodeLabels )? ( oC_Properties )?
+    ;
+
+oC_PatternElementChain
+    : oC_RelationshipPattern oC_NodePattern
+    ;
+
+oC_RelationshipPattern
+    : oC_LeftArrowHead? oC_Dash oC_RelationshipDetail? oC_Dash oC_RightArrowHead?
+    ;
+
+oC_RelationshipDetail
+    : '[' oC_Variable? oC_RelationshipTypes? oC_RangeLiteral? oC_Properties? ']'
+    ;
+
+oC_Properties
+    : '{' oC_PropertyKeyValue ( ',' oC_PropertyKeyValue )* '}'
+    | '{' '}'
+    ;
+
+oC_RelationshipTypes
+    : ':' oC_RelTypeName ( '|' ':' oC_RelTypeName )*
+    ;
+
+oC_NodeLabels
+    : oC_NodeLabel+
+    ;
+
+oC_NodeLabel
+    : ':' oC_LabelName
+    ;
+
+oC_RangeLiteral
+    : '*' oC_IntegerLiteral? ( '..' oC_IntegerLiteral? )?
+    ;
+
+oC_LabelName
+    : oC_SchemaName
+    ;
+
+oC_RelTypeName
+    : oC_SchemaName
+    ;
+
+oC_Expression
+    : oC_OrExpression
+    ;
+
+oC_OrExpression
+    : oC_AndExpression ( OR oC_AndExpression )*
+    ;
+
+oC_AndExpression
+    : oC_NotExpression ( AND oC_NotExpression )*
+    ;
+
+oC_NotExpression
+    : ( NOT )* oC_ComparisonExpression
+    ;
+
+oC_ComparisonExpression
+    : oC_AddOrSubtractExpression ( oC_PartialComparisonExpression )*
+    ;
+
+oC_AddOrSubtractExpression
+    : oC_MultiplyDivideModuloExpression ( ( '+' | '-' ) oC_MultiplyDivideModuloExpression )*
+    ;
+
+oC_MultiplyDivideModuloExpression
+    : oC_PowerOfExpression ( ( '*' | '/' | '%' ) oC_PowerOfExpression )*
+    ;
+
+oC_PowerOfExpression
+    : oC_UnaryAddOrSubtractExpression ( '^' oC_UnaryAddOrSubtractExpression )*
+    ;
+
+oC_UnaryAddOrSubtractExpression
+    : ( ( '+' | '-' ) )* oC_StringListNullOperatorExpression
+    ;
+
+oC_StringListNullOperatorExpression
+    : oC_PropertyOrLabelsExpression
+    ( oC_StringOperatorExpression
+    | oC_ListOperatorExpression
+    | oC_NullOperatorExpression
+    )*
+    ;
+
+oC_ListOperatorExpression
+    : IN oC_PropertyOrLabelsExpression
+    | '[' oC_Expression ']'
+    ;
+
+oC_StringOperatorExpression
+    : ( STARTS WITH | ENDS WITH | CONTAINS ) oC_PropertyOrLabelsExpression
+    ;
+
+oC_NullOperatorExpression
+    : IS NULL
+    | IS NOT NULL
+    ;
+
+oC_PropertyOrLabelsExpression
+    : oC_Atom ( oC_PropertyLookup | oC_NodeLabels )*
+    ;
+
+oC_Atom
+    : oC_Literal
+    | oC_Parameter
+    | oC_Variable
+    | oC_FunctionInvocation
+    | oC_ExplicitProcedureInvocation
+    | oC_ImplicitProcedureInvocation
+    | oC_CountExpression
+    | oC_ListComprehension
+    | oC_PatternComprehension
+    | oC_Parenthesized
+    | oC_FunctionName
+    ;
+
+oC_Literal
+    : oC_NumberLiteral
+    | StringLiteral
+    | oC_BooleanLiteral
+    | NULL
+    | oC_MapLiteral
+    | oC_ListLiteral
+    ;
+
+oC_BooleanLiteral
+    : TRUE
+    | FALSE
+    ;
+
+oC_ListLiteral
+    : '[' ( oC_Expression ( ',' oC_Expression )* )? ']'
+    ;
+
+oC_Parenthesized
+    : '(' oC_Expression ')'
+    ;
+
+oC_PropertyExpression
+    : oC_Atom oC_PropertyLookup
+    ;
+
+oC_PropertyLookup
+    : '.' oC_PropertyKeyName
     ;
 
 oC_Variable
     : oC_SymbolicName
     ;
 
+oC_PropertyKeyName
+    : oC_SchemaName
+    ;
+
+oC_IntegerLiteral
+    : HexInteger
+    | OctalInteger
+    | DecimalInteger
+    ;
+
+oC_DoubleLiteral
+    : ExponentDecimalReal
+    | RegularDecimalReal
+    ;
+
+oC_SchemaName
+    : oC_SymbolicName
+    | oC_ReservedWord
+    ;
+
 oC_SymbolicName
     : UnescapedSymbolicName
     | EscapedSymbolicName
     | HexLetter
-    | COUNT
-    | FILTER
-    | EXTRACT
-    | ANY
-    | NONE
-    | SINGLE
     ;
 
-UnescapedSymbolicName
-    : IdentifierStart IdentifierPart*
+oC_LeftArrowHead
+    : '<'
     ;
 
-EscapedSymbolicName
-    : '`' ~'`'* '`'
+oC_RightArrowHead
+    : '>'
     ;
 
-IdentifierStart
-    : [a-zA-Z_]
-    ;
-
-IdentifierPart
-    : [a-zA-Z0-9_]
-    ;
-
-HexLetter
-    : [A-Fa-f]
+oC_Dash
+    : '-'
     ;
 
 // Lexer Rules
-UNION: U N I O N;
-ALL: A L L;
-OPTIONAL: O P T I O N A L;
-MATCH: M A T C H;
-UNWIND: U N W I N D;
-AS: A S;
-MERGE: M E R G E;
-CREATE: C R E A T E;
-SET: S E T;
-DETACH: D E T A C H;
-DELETE: D E L E T E;
-REMOVE: R E M O V E;
-WITH: W I T H;
-RETURN: R E T U R N;
-DISTINCT: D I S T I N C T;
-ORDER: O R D E R;
-BY: B Y;
-L_SKIP: S K I P;
-LIMIT: L I M I T;
-ASCENDING: A S C;
-ASC: A S C;
-DESCENDING: D E S C;
-DESC: D E S C;
-WHERE: W H E R E;
-OR: O R;
-XOR: X O R;
-AND: A N D;
-NOT: N O T;
-IN: I N;
-STARTS: S T A R T S;
-ENDS: E N D S;
-CONTAINS: C O N T A I N S;
-IS: I S;
-NULL: N U L L;
-COUNT: C O U N T;
-FILTER: F I L T E R;
-EXTRACT: E X T R A C T;
-ANY: A N Y;
-NONE: N O N E;
-SINGLE: S I N G L E;
+CREATE: 'CREATE';
+DROP: 'DROP';
+INDEX: 'INDEX';
+ON: 'ON';
+OPTIONAL: 'OPTIONAL';
+MATCH: 'MATCH';
+UNWIND: 'UNWIND';
+AS: 'AS';
+MERGE: 'MERGE';
+SET: 'SET';
+DETACH: 'DETACH';
+DELETE: 'DELETE';
+REMOVE: 'REMOVE';
+WITH: 'WITH';
+RETURN: 'RETURN';
+DISTINCT: 'DISTINCT';
+ORDER: 'ORDER';
+BY: 'BY';
+SKIP: 'SKIP';
+LIMIT: 'LIMIT';
+ASCENDING: 'ASC';
+ASC: 'ASC';
+DESCENDING: 'DESC';
+DESC: 'DESC';
+WHERE: 'WHERE';
+OR: 'OR';
+XOR: 'XOR';
+AND: 'AND';
+NOT: 'NOT';
+IN: 'IN';
+STARTS: 'STARTS';
+ENDS: 'ENDS';
+CONTAINS: 'CONTAINS';
+IS: 'IS';
+NULL: 'NULL';
+TRUE: 'TRUE';
+FALSE: 'FALSE';
+COUNT: 'COUNT';
+FILTER: 'FILTER';
+EXTRACT: 'EXTRACT';
+ANY: 'ANY';
+NONE: 'NONE';
+SINGLE: 'SINGLE';
+UNION: 'UNION';
+ALL: 'ALL';
+CONSTRAINT: 'CONSTRAINT';
+ASSERT: 'ASSERT';
+UNIQUE: 'UNIQUE';
+EXISTS: 'EXISTS';
+CALL: 'CALL';
+YIELD: 'YIELD';
 
-fragment A: [aA];
-fragment B: [bB];
-fragment C: [cC];
-fragment D: [dD];
-fragment E: [eE];
-fragment F: [fF];
-fragment G: [gG];
-fragment H: [hH];
-fragment I: [iI];
-fragment J: [jJ];
-fragment K: [kK];
-fragment L: [lL];
-fragment M: [mM];
-fragment N: [nN];
-fragment O: [oO];
-fragment P: [pP];
-fragment Q: [qQ];
-fragment R: [rR];
-fragment S: [sS];
-fragment T: [tT];
-fragment U: [uU];
-fragment V: [vV];
-fragment W: [wW];
-fragment X: [xX];
-fragment Y: [yY];
-fragment Z: [zZ];
+UnescapedSymbolicName: [a-zA-Z_] [a-zA-Z0-9_]*;
+EscapedSymbolicName: '`' ( ~'`' )* '`';
+StringLiteral: '"' ( ~'"' )* '"' | '\'' ( ~'\'' )* '\'';
+HexInteger: '0x' [0-9a-fA-F]+;
+DecimalInteger: '0' | [1-9] [0-9]*;
+OctalInteger: '0o' [0-7]+;
+ExponentDecimalReal: ( '0' | [1-9] [0-9]* ) ( '.' [0-9]+ )? [eE] [-+]? [0-9]+;
+RegularDecimalReal: ( '0' | [1-9] [0-9]* ) '.' [0-9]+;
+HexLetter: [A-Fa-f];
 
-SP: [ \t\n\r\f]+;
+WS: [ \t\r\n\f]+ -> skip;
+COMMENT: '//' ~[\r\n]* -> skip;
+MULTILINE_COMMENT: '/*' .*? '*/' -> skip;
