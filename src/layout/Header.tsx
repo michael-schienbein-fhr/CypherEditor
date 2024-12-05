@@ -1,6 +1,6 @@
 import { Database, Github, Settings, Play, Save, FileJson, Book } from 'lucide-react'
 import { Menu } from '@headlessui/react'
-import { useTheme } from '../features/theme/useTheme'
+import { useTheme } from '~/features/theme/useTheme'
 
 interface HeaderProps {
   onRun?: () => void

@@ -1,7 +1,7 @@
 import { useOutletContext } from 'react-router-dom'
 import { CodeEditor } from '../features/editor/CodeEditor'
 import { Header } from '../layout/Header'
-import { useExecuteQueryMutation, useValidateQueryMutation } from '../store/cypherApi'
+import { useExecuteQueryMutation, useValidateQueryMutation } from '../app/api/cypherApi'
 import { useState, useCallback, useEffect } from 'react'
 
 interface LayoutContext {
