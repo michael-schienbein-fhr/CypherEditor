@@ -1,8 +1,7 @@
-import React from 'react';
-import { parseQuery } from '../utils/cypherParser';
+import { parseQuery } from '../../utils/cypherParser';
 import { ValidationPanel } from './ValidationPanel';
 import { PerformancePanel } from './PerformancePanel';
-import { TemplatePanel } from './TemplatePanel';
+import { TemplatePanel } from '../../components/TemplatePanel';
 
 interface QueryAnalyzerProps {
   query: string;

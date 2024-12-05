@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { EditorHeader } from './EditorHeader';
-import { CodeEditor } from './CodeEditor';
+import { EditorHeader } from '../features/editor/EditorHeader';
+import { CodeEditor } from '../features/editor/CodeEditor';
 
 interface CypherEditorProps {
   value: string;

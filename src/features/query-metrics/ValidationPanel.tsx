@@ -1,6 +1,5 @@
-import React from 'react';
 import { AlertCircle, CheckCircle } from 'lucide-react';
-import { validateQuery } from '../utils/queryValidator';
+import { validateQuery } from '../../utils/queryValidator';
 
 interface ValidationPanelProps {
   query: string;

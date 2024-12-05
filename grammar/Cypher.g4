@@ -1,9 +1,5 @@
 grammar Cypher;
 
-options {
-  caseInsensitive = true;
-}
-
 oC_Cypher: oC_Statement ( ';' )? EOF;
 
 oC_Statement
@@ -139,7 +135,7 @@ oC_Return
 oC_ReturnBody
     : oC_ReturnItems
       ( ORDER BY oC_SortItem ( ',' oC_SortItem )* )?
-      ( SKIP oC_Expression )?
+      ( SKIP_KEYWORD oC_Expression )?
       ( LIMIT oC_Expression )?
     ;
 
@@ -157,7 +153,7 @@ oC_Order
     ;
 
 oC_SortItem
-    : oC_Expression ( ASCENDING | ASC | DESCENDING | DESC )?
+    : oC_Expression ( ASCENDING | DESCENDING )?
     ;
 
 oC_Pattern
@@ -389,12 +385,10 @@ RETURN: 'RETURN';
 DISTINCT: 'DISTINCT';
 ORDER: 'ORDER';
 BY: 'BY';
-SKIP: 'SKIP';
+SKIP_KEYWORD: 'SKIP';
 LIMIT: 'LIMIT';
 ASCENDING: 'ASC';
-ASC: 'ASC';
 DESCENDING: 'DESC';
-DESC: 'DESC';
 WHERE: 'WHERE';
 OR: 'OR';
 XOR: 'XOR';
@@ -422,6 +416,18 @@ UNIQUE: 'UNIQUE';
 EXISTS: 'EXISTS';
 CALL: 'CALL';
 YIELD: 'YIELD';
+CASE: 'CASE';
+WHEN: 'WHEN';
+THEN: 'THEN';
+ELSE: 'ELSE';
+END: 'END';
+MANDATORY: 'MANDATORY';
+SCALAR: 'SCALAR';
+OF: 'OF';
+ADD: 'ADD';
+DO: 'DO';
+FOR: 'FOR';
+REQUIRE: 'REQUIRE';
 
 UnescapedSymbolicName: [a-zA-Z_] [a-zA-Z0-9_]*;
 EscapedSymbolicName: '`' ( ~'`' )* '`';
@@ -436,3 +442,134 @@ HexLetter: [A-Fa-f];
 WS: [ \t\r\n\f]+ -> skip;
 COMMENT: '//' ~[\r\n]* -> skip;
 MULTILINE_COMMENT: '/*' .*? '*/' -> skip;
+
+oC_UpdatingClause
+    : oC_Create
+    | oC_Merge
+    | oC_Delete
+    | oC_Set
+    | oC_Remove
+    ;
+
+oC_ExplicitProcedureInvocation
+    : oC_ProcedureName '(' ( oC_Expression ( ',' oC_Expression )* )? ')'
+    ;
+
+oC_ProcedureName
+    : oC_Namespace oC_SymbolicName
+    ;
+
+oC_Namespace
+    : ( oC_SymbolicName '.' )*
+    ;
+
+oC_ProcedureResultField
+    : oC_SymbolicName
+    ;
+
+oC_PropertyKeyValue
+    : oC_PropertyKeyName ':' oC_Expression
+    ;
+
+oC_PartialComparisonExpression
+    : ( '=' | '<>' | '<' | '>' | '<=' | '>=' ) oC_AddOrSubtractExpression
+    ;
+
+oC_Parameter
+    : '$' oC_SymbolicName
+    ;
+
+oC_FunctionInvocation
+    : oC_FunctionName '(' ( DISTINCT? oC_Expression ( ',' oC_Expression )* )? ')'
+    ;
+
+oC_FunctionName
+    : oC_Namespace oC_SymbolicName
+    ;
+
+oC_ImplicitProcedureInvocation
+    : oC_ProcedureName
+    ;
+
+oC_CountExpression
+    : COUNT '(' ( '*' | DISTINCT? oC_Expression ) ')'
+    ;
+
+oC_ListComprehension
+    : '[' oC_FilterExpression ( '|' oC_Expression )? ']'
+    ;
+
+oC_FilterExpression
+    : oC_IdInColl ( WHERE oC_Expression )?
+    ;
+
+oC_IdInColl
+    : oC_Variable IN oC_Expression
+    ;
+
+oC_PatternComprehension
+    : '[' ( oC_Variable '=' )? oC_Pattern ( WHERE oC_Expression )? '|' oC_Expression ']'
+    ;
+
+oC_NumberLiteral
+    : oC_DoubleLiteral
+    | oC_IntegerLiteral
+    ;
+
+oC_MapLiteral
+    : '{' ( oC_PropertyKeyName ':' oC_Expression ( ',' oC_PropertyKeyName ':' oC_Expression )* )? '}'
+    ;
+
+oC_ReservedWord
+    : ALL
+    | ASCENDING
+    | BY
+    | CREATE
+    | DELETE
+    | DESCENDING
+    | DETACH
+    | EXISTS
+    | LIMIT
+    | MATCH
+    | MERGE
+    | ON
+    | OPTIONAL
+    | ORDER
+    | REMOVE
+    | RETURN
+    | SET
+    | SKIP_KEYWORD
+    | WHERE
+    | WITH
+    | UNION
+    | UNWIND
+    | AND
+    | AS
+    | CONTAINS
+    | DISTINCT
+    | ENDS
+    | IN
+    | IS
+    | NOT
+    | OR
+    | STARTS
+    | XOR
+    | FALSE
+    | TRUE
+    | NULL
+    | CONSTRAINT
+    | DO
+    | FOR
+    | REQUIRE
+    | UNIQUE
+    | CASE
+    | WHEN
+    | THEN
+    | ELSE
+    | END
+    | MANDATORY
+    | SCALAR
+    | OF
+    | ADD
+    | DROP
+    ;

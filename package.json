@@ -1,14 +1,18 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "cyphereditor",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0",
+    "bun": ">=1.0.0"
+  },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "vinxi dev",
+    "build": "vinxi build",
+    "start": "vinxi start",
     "lint": "biome lint .",
     "format": "biome format .",
-    "preview": "vite preview",
     "generate-parser": "antlr4ts -visitor grammar/Cypher.g4 -o src/generated"
   },
   "dependencies": {
@@ -17,26 +21,31 @@
     "@codemirror/language": "^6.10.1",
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.24.1",
+    "@headlessui/react": "^2.2.0",
+    "@reduxjs/toolkit": "^2.2.1",
+    "@tanstack/react-table": "^8.13.2",
     "@uiw/codemirror-theme-vscode": "^4.21.24",
     "@uiw/react-codemirror": "^4.21.24",
     "antlr4ng": "^1.1.7",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-redux": "^9.1.0",
+    "react-router-dom": "^6.22.3",
+    "vinxi": "^0.3.10"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@tailwindcss/forms": "^0.5.9",
+    "@tailwindcss/typography": "^0.5.15",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
     "antlr4ts": "^0.5.0-alpha.4",
     "antlr4ts-cli": "^0.5.0-alpha.4",
-    "autoprefixer": "^10.4.18",
-    "globals": "^15.9.0",
-    "postcss": "^8.4.35",
-    "react-refresh": "^0.14.2",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5.5.3",
-    "vite": "^5.4.2"
+    "autoprefixer": "10.4.16",
+    "postcss": "8.4.31",
+    "postcss-cli": "^11.0.0",
+    "tailwindcss": "3.3.0",
+    "typescript": "^5.5.3"
   }
 }

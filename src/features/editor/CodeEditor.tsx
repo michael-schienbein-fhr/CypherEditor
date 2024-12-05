@@ -1,16 +1,19 @@
+'use client';
+
 import { useState, useCallback } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
-import { cypher } from '../utils/cypherLanguage';
-import { darkTheme, lightTheme } from '../utils/themes';
-import { WrapText, AlertCircle } from 'lucide-react';
+import { cypher } from '../../utils/cypherLanguage';
+import { darkTheme, lightTheme } from '../../theme/themes';
+import { WrapText, AlertCircle, Sun, Moon } from 'lucide-react';
 import { EditorView } from '@codemirror/view';
-import { Diagnostic } from '@codemirror/lint';
 import { syntaxTree } from '@codemirror/language';
+import { Switch } from '@headlessui/react';
 
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
   isDark: boolean;
+  onThemeChange: (isDark: boolean) => void;
 }
 
 interface SyntaxError {
@@ -19,14 +22,13 @@ interface SyntaxError {
   column: number;
 }
 
-export function CodeEditor({ value, onChange, isDark }: CodeEditorProps) {
+export function CodeEditor({ value, onChange, isDark, onThemeChange }: CodeEditorProps) {
   const [wordWrap, setWordWrap] = useState(true);
   const [syntaxErrors, setSyntaxErrors] = useState<SyntaxError[]>([]);
 
   const handleChange = useCallback((value: string, viewUpdate: any) => {
     onChange(value);
     
-    // Check for syntax errors
     const tree = syntaxTree(viewUpdate.state);
     const errors: SyntaxError[] = [];
     
@@ -64,35 +66,17 @@ export function CodeEditor({ value, onChange, isDark }: CodeEditorProps) {
       ".cm-gutters": {
         minHeight: "100%"
       },
-      ".cm-diagnostic": {
-        padding: "1px 8px",
-        marginLeft: "4px",
+      ".cm-line .cm-error": {
+        backgroundColor: isDark ? "#442222" : "#ffebee",
         borderRadius: "3px",
-        whiteSpace: "pre-wrap"
-      },
-      ".cm-diagnostic-error": {
-        backgroundColor: isDark ? "#442222" : "#ffebee"
+        padding: "0 4px"
       }
     }),
-    wordWrap ? EditorView.lineWrapping : [],
-    EditorView.updateListener.of((update) => {
-      if (update.docChanged) {
-        diagnostics(update.view);
-      }
-    })
+    wordWrap ? EditorView.lineWrapping : []
   ];
 
-  const diagnostics = (view: EditorView): Diagnostic[] => {
-    return syntaxErrors.map(error => ({
-      from: view.state.doc.line(error.line).from + error.column,
-      to: view.state.doc.line(error.line).from + error.column + 1,
-      severity: 'error',
-      message: error.message
-    }));
-  };
-
   return (
-    <div className="h-full relative">
+    <div className="h-full relative flex flex-col">
       <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
         {syntaxErrors.length > 0 && (
           <div className={`p-2 rounded-md flex items-center gap-2 text-sm ${
@@ -100,24 +84,41 @@ export function CodeEditor({ value, onChange, isDark }: CodeEditorProps) {
               ? 'bg-red-900/50 text-red-200'
               : 'bg-red-100 text-red-800'
           }`}>
-            <AlertCircle size={16} />
+            <AlertCircle className="w-4 h-4" />
             <span>{syntaxErrors.length} error{syntaxErrors.length !== 1 ? 's' : ''}</span>
           </div>
         )}
-        <button
-          onClick={() => setWordWrap(!wordWrap)}
-          className={`p-2 rounded-md transition-colors flex items-center gap-2 text-sm ${
-            isDark 
-              ? 'bg-[#2a2a3e] hover:bg-[#4a148c] text-[#e0e0ff]'
-              : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
-          }`}
-          title={wordWrap ? "Disable word wrap" : "Enable word wrap"}
+        
+        <Switch
+          checked={wordWrap}
+          onChange={setWordWrap}
+          className={`${
+            wordWrap ? 'bg-indigo-600' : 'bg-gray-200'
+          } relative inline-flex h-8 w-auto items-center rounded-md px-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`}
         >
-          <WrapText size={16} />
-          <span>Wrap</span>
-        </button>
+          <WrapText className={`w-4 h-4 ${wordWrap ? 'text-white' : 'text-gray-500'}`} />
+          <span className={`ml-2 text-sm ${wordWrap ? 'text-white' : 'text-gray-500'}`}>Wrap</span>
+        </Switch>
+
+        <Switch
+          checked={isDark}
+          onChange={onThemeChange}
+          className={`${
+            isDark ? 'bg-indigo-600' : 'bg-gray-200'
+          } relative inline-flex h-8 w-auto items-center rounded-md px-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`}
+        >
+          {isDark ? (
+            <Moon className="w-4 h-4 text-white" />
+          ) : (
+            <Sun className="w-4 h-4 text-gray-500" />
+          )}
+          <span className={`ml-2 text-sm ${isDark ? 'text-white' : 'text-gray-500'}`}>
+            {isDark ? 'Dark' : 'Light'}
+          </span>
+        </Switch>
       </div>
-      <div className="h-full overflow-hidden">
+
+      <div className="flex-1 mt-14">
         <CodeMirror
           value={value}
           height="100%"

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Upload } from 'lucide-react';
-import { ThemeToggle } from './ThemeToggle';
+import { ThemeToggle } from '../../layout/ThemeToggle';
 
 interface EditorHeaderProps {
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;

@@ -1,6 +1,5 @@
-import React from 'react';
 import { Clock, Cpu } from 'lucide-react';
-import { analyzePerformance } from '../utils/performanceAnalyzer';
+import { analyzePerformance } from '../../utils/performanceAnalyzer';
 
 interface PerformancePanelProps {
   query: string;
